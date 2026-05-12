@@ -1,4 +1,5 @@
 import pygame
+import random
 
 from player import *
 from wall import Wall
@@ -56,7 +57,7 @@ class Game:
         ## Initial level generation
         self._generate_level()
 
-    def _generate_level(self):
+    def _generate_level(self, num_internal_walls=10):
 
         for col in range(self.tile_cols):
             # first col
@@ -71,6 +72,19 @@ class Game:
 
             # last row
             self.map[self.tile_rows - 1][row] = Wall(self.tile_cols - 1, row, self.tile_width, self.tile_height)
+
+        ### create random internal walls
+        for _ in range(num_internal_walls):
+            # Initial randomization, avoid clashing with the border
+            x = random.randint(1, self.tile_cols - 2)
+            y = random.randint(1, self.tile_rows - 2)
+
+            ## if space is not free
+            while self.map[x][y] != 0:
+                x = random.randint(1, self.tile_cols - 2)
+                y = random.randint(1, self.tile_rows - 2)
+
+            self.map[x][y] = Wall(x, y, self.tile_width, self.tile_height)
  
 
     def _setup_pygame(self):
