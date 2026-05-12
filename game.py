@@ -1,12 +1,15 @@
 import pygame
 import random
 
+from enemy import *
 from player import *
 from wall import Wall
 
 FPS = 60
+
 BLACK = (0,0,0)
 WHITE = (255, 255, 255)
+BLUE = (0,0,255)
 
 INITIAL_PLAYER_GRID_X = 2
 INITIAL_PLAYER_GRID_Y = 2
@@ -54,10 +57,13 @@ class Game:
         self.player = Player(INITIAL_PLAYER_GRID_X, INITIAL_PLAYER_GRID_Y, self.tile_width, self.tile_height)
         self.map[INITIAL_PLAYER_GRID_X][INITIAL_PLAYER_GRID_Y] = self.player
 
+        ## Create Enemies
+        self.enemies = []
+
         ## Initial level generation
         self._generate_level()
 
-    def _generate_level(self, num_internal_walls=10):
+    def _generate_level(self, num_internal_walls=10, num_enemies = 3):
 
         for col in range(self.tile_cols):
             # first col
@@ -85,6 +91,30 @@ class Game:
                 y = random.randint(1, self.tile_rows - 2)
 
             self.map[x][y] = Wall(x, y, self.tile_width, self.tile_height)
+
+     ### Create random enemies with initial tile spawn on free tile
+        for _ in range(num_enemies):
+            minx_tile_spawn_range = 3
+            maxx_tile_spawn_range = self.tile_rows - 1
+            miny_tile_spawn_range = 1
+            maxy_tile_spawn_range = self.tile_cols - 1
+
+            enemy_x, enemy_y = self._find_free_tile(minx_tile_spawn_range, 
+                                                    maxx_tile_spawn_range, 
+                                                    miny_tile_spawn_range, 
+                                                    maxy_tile_spawn_range)
+            enemy = Enemy(enemy_x, enemy_y, self.tile_width, self.tile_height)
+            self.map[enemy_x][enemy_y] = enemy
+            self.enemies.append(enemy)
+
+    def _find_free_tile(self, min_x, max_x, min_y, max_y):
+        ## loop to get the first free tile
+        while True:
+            check_x = random.randint(min_x, max_x)
+            check_y = random.randint(min_y, max_y)
+
+            if self.map[check_x][check_y] == 0:
+                return check_x, check_y
  
 
     def _setup_pygame(self):
@@ -98,6 +128,10 @@ class Game:
                 self.running = False
             if self.player:
                 moved = self.player.handle_input(event, self.map, self.tile_cols, self.tile_rows)
+
+                if moved: 
+                    for enemy in self.enemies:
+                        enemy.take_turn(self.map, self.tile_cols, self.tile_rows)
 
     def _draw(self):
         self.display.fill(WHITE)
@@ -114,11 +148,19 @@ class Game:
                 rect = (col * self.tile_width, row * self.tile_height, self.tile_width, self.tile_height)
                 pygame.draw.rect(self.display, BLACK, rect, 1)
 
+        ## draw enemies
+        for enemy in self.enemies:
+            enemy.draw(self.display)
+
         ## draw player
         self.player.draw(self.display)
 
         pygame.display.update()
 
     def _update(self):
-        pass
+        ## update player
         self.player.update()
+
+        ## update enemies
+        for enemy in self.enemies:
+            enemy.update()
